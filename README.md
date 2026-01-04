@@ -44,34 +44,44 @@ The Smart Home Automation System is a full-stack solution designed to provide re
 
 ```
 Smart-Home-Automation-System/
-├── database/                      # Database schemas and migration scripts
-│   ├── schema.sql                # Database structure definitions
-│   └── seed_data.sql             # Sample data for testing
+├── database/                      # Database configuration and schemas
 │
-├── imageSCMobileApp/             # Mobile application assets and resources
-│   ├── screenshots/              # App screenshots for documentation
-│   └── icons/                    # Application icons and graphics
+├── imageSCMobileApp/             # Mobile application screenshots and assets
 │
-├── raspberryPythonSC/            # Raspberry Pi control scripts
-│   ├── gpio_control.py           # GPIO pin management
-│   ├── device_manager.py         # Device state management
-│   ├── sensor_reader.py          # Sensor data collection
-│   └── main.py                   # Main automation controller
+├── raspberryPythonSC/            # Raspberry Pi Python control scripts
 │
-├── smarthomeSCWebApp/            # Web application directory
-│   ├── assets/                   # Static files (CSS, JS, images)
-│   ├── config/                   # Configuration files
-│   ├── controllers/              # Business logic controllers
-│   ├── models/                   # Data models
-│   ├── views/                    # HTML templates
-│   ├── api/                      # REST API endpoints
-│   └── index.php                 # Application entry point
+├── smarthomeSCWebApp/            # Web application (PHP-based)
 │
 ├── android.keystore              # Android signing keystore
 ├── finaltest.aab                 # Android App Bundle (for Play Store)
 ├── finaltest.apk                 # Android APK (direct installation)
 └── README.md                     # Project documentation
 ```
+
+### Directory Details
+
+#### `database/`
+Contains database schema definitions, initial setup scripts, and potentially migration scripts for database versioning.
+
+#### `imageSCMobileApp/`
+Stores mobile application assets including screenshots, icons, and promotional images used for app documentation and Play Store listings.
+
+#### `raspberryPythonSC/`
+Houses Python scripts responsible for:
+- GPIO pin control and management
+- Sensor data reading and processing
+- Device state management
+- Communication with web server
+- Hardware automation logic
+
+#### `smarthomeSCWebApp/`
+The main web application directory containing:
+- PHP backend logic
+- HTML/CSS/JavaScript frontend files
+- User authentication system
+- Device management interfaces
+- API endpoints for mobile app communication
+- Configuration files
 
 ## Requirements
 
@@ -113,11 +123,8 @@ mysql -u root -p
 # Create database
 CREATE DATABASE smart_home_db;
 
-# Import schema
+# Import schema (adjust path based on actual schema file location)
 mysql -u root -p smart_home_db < database/schema.sql
-
-# (Optional) Import sample data
-mysql -u root -p smart_home_db < database/seed_data.sql
 ```
 
 ### 3. Web Application Configuration
@@ -125,20 +132,23 @@ mysql -u root -p smart_home_db < database/seed_data.sql
 ```bash
 cd smarthomeSCWebApp
 
-# Copy configuration template
-cp config/config.example.php config/config.php
+# Create configuration file
+cp config.example.php config.php
 
 # Edit configuration file with your database credentials
-nano config/config.php
+nano config.php
 ```
 
-Update the following in `config/config.php`:
+Update the configuration file with your settings:
 
 ```php
+<?php
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'smart_home_db');
 define('DB_USER', 'your_username');
 define('DB_PASS', 'your_password');
+define('BASE_URL', 'http://localhost/smarthome');
+?>
 ```
 
 ### 4. Web Server Setup
@@ -183,7 +193,7 @@ sudo systemctl restart apache2
 cd raspberryPythonSC
 
 # Install Python dependencies
-pip3 install -r requirements.txt
+pip3 install RPi.GPIO requests mysql-connector-python
 
 # Configure GPIO permissions
 sudo usermod -a -G gpio $USER
@@ -198,50 +208,55 @@ python3 -c "import RPi.GPIO as GPIO; print('GPIO access successful')"
 ```bash
 # Transfer finaltest.apk to Android device
 adb install finaltest.apk
+
+# Or download directly to device and install from file manager
 ```
 
 #### Option B: Deploy AAB to Play Store
 - Upload `finaltest.aab` to Google Play Console
 - Follow Play Store submission guidelines
+- Use the provided keystore for signing
 
 ## Configuration
 
 ### Environment Variables
 
-Create a `.env` file in the web application root:
+Create a configuration file in the web application directory (e.g., `smarthomeSCWebApp/config.php`):
 
-```env
-# Database Configuration
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=smart_home_db
-DB_USER=smart_home_user
-DB_PASSWORD=secure_password
+```php
+<?php
+// Database Configuration
+define('DB_HOST', 'localhost');
+define('DB_PORT', '3306');
+define('DB_NAME', 'smart_home_db');
+define('DB_USER', 'smart_home_user');
+define('DB_PASSWORD', 'secure_password');
 
-# Application Settings
-APP_ENV=production
-APP_DEBUG=false
-APP_URL=http://smarthome.local
+// Application Settings
+define('APP_ENV', 'production');
+define('APP_DEBUG', false);
+define('APP_URL', 'http://smarthome.local');
 
-# Raspberry Pi Settings
-RPI_HOST=192.168.1.100
-RPI_PORT=5000
-RPI_API_KEY=your_secure_api_key
+// Raspberry Pi Settings
+define('RPI_HOST', '192.168.1.100');
+define('RPI_PORT', '5000');
+define('RPI_API_KEY', 'your_secure_api_key');
 
-# Security
-SESSION_LIFETIME=1440
-ENCRYPTION_KEY=generate_32_character_key_here
+// Security
+define('SESSION_LIFETIME', 1440);
+define('ENCRYPTION_KEY', 'generate_32_character_key_here');
 
-# Email Configuration (for notifications)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your_email@gmail.com
-SMTP_PASSWORD=your_app_password
+// Email Configuration (for notifications)
+define('SMTP_HOST', 'smtp.gmail.com');
+define('SMTP_PORT', 587);
+define('SMTP_USER', 'your_email@gmail.com');
+define('SMTP_PASSWORD', 'your_app_password');
+?>
 ```
 
 ### Raspberry Pi Configuration
 
-Edit `raspberryPythonSC/config.json`:
+Create a configuration file `raspberryPythonSC/config.json`:
 
 ```json
 {
@@ -263,8 +278,9 @@ Edit `raspberryPythonSC/config.json`:
     "motion": 18
   },
   "api": {
-    "port": 5000,
-    "host": "0.0.0.0"
+    "server_url": "http://192.168.1.50/smarthome",
+    "api_key": "your_secure_api_key",
+    "poll_interval": 5
   }
 }
 ```
@@ -290,11 +306,13 @@ python3 main.py
 #### 3. Access Web Interface
 - Open browser and navigate to `http://localhost:8000` or your configured domain
 - Register a new account or login with existing credentials
+- Navigate through the dashboard to control devices
 
 #### 4. Launch Mobile App
 - Open the Smart Home app on your Android device
 - Login with your web application credentials
 - Grant necessary permissions (network access, notifications)
+- Control devices from anywhere
 
 ### Basic Operations
 
@@ -511,7 +529,7 @@ CREATE TABLE energy_consumption (
 - User roles and permissions are enforced at the application level
 
 ### Data Protection
-- All sensitive configuration stored in `.env` files (excluded from version control)
+- All sensitive configuration stored in separate config files (excluded from version control)
 - Database credentials should never be committed to repository
 - Use HTTPS/TLS for all production deployments
 - API keys for Raspberry Pi communication should be rotated regularly
@@ -548,19 +566,23 @@ sudo apt-get update && sudo apt-get upgrade -y
 ## Screenshots
 
 ### Web Application Dashboard
-![Dashboard Placeholder](./imageSCMobileApp/screenshots/web-dashboard.png)
+![Dashboard Placeholder](./imageSCMobileApp/dashboard.png)
+
 *Main control panel showing all connected devices and their current status*
 
 ### Mobile Application Interface
-![Mobile App Placeholder](./imageSCMobileApp/screenshots/mobile-home.png)
+![Mobile App Placeholder](./imageSCMobileApp/mobile-home.png)
+
 *Android app home screen with quick device controls*
 
 ### Energy Monitoring
-![Energy Stats Placeholder](./imageSCMobileApp/screenshots/energy-stats.png)
+![Energy Stats Placeholder](./imageSCMobileApp/energy-stats.png)
+
 *Real-time energy consumption analytics and historical data*
 
 ### Device Control Panel
-![Control Panel Placeholder](./imageSCMobileApp/screenshots/device-control.png)
+![Control Panel Placeholder](./imageSCMobileApp/device-control.png)
+
 *Individual device management with scheduling options*
 
 ## Deployment
@@ -686,7 +708,7 @@ groups $USER
 #### Python Module Not Found
 ```bash
 # Reinstall dependencies
-pip3 install --upgrade -r requirements.txt
+pip3 install --upgrade RPi.GPIO requests mysql-connector-python
 
 # If pip3 not found
 sudo apt-get install python3-pip
@@ -694,7 +716,7 @@ sudo apt-get install python3-pip
 
 #### Devices Not Responding
 ```bash
-# Check GPIO pin assignments in config.json
+# Check GPIO pin assignments in config
 # Test GPIO manually
 python3 -c "import RPi.GPIO as GPIO; GPIO.setmode(GPIO.BCM); GPIO.setup(17, GPIO.OUT); GPIO.output(17, GPIO.HIGH)"
 
