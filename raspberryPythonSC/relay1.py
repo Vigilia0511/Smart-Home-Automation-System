@@ -866,8 +866,8 @@ def change_password():
                     file.write(f"{uid}={pwd}\n")
             
             # Send the new password to the recipient email
-            sender_email = "joshuacajimatvigilia@gmail.com"
-            app_password = "utfo zekm yket vxsa"  # Consider using environment variables
+            sender_email = "youremail@gmail.com"
+            app_password = "password"  # Consider using environment variables
             send_new_password_email(sender_email, app_password, recipient_email, new_password)
             
             logging.info(f"Password updated successfully for user {user_id}.")
